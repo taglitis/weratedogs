@@ -213,7 +213,8 @@ tweets_api.describe()
 * rating_numerator in most cases is in between 0 and 15, the rest consider as outliers
 * variable name has 745 None values and 55 "a" values 
 * in timestamp +0000 is redundent information 
-* name variable has some entries starting with low case letters(example: An).  
+* name variable has some entries starting with low case letters(example: An).
+* expanded_urls contains link which are not validm possible because they are expired
 
 *`prediction`* table
 * variable img_num is not needed  
@@ -514,6 +515,16 @@ prediction.head(1)
 ```
 
 *`Define`*
+
+Drop expanded_urls 
+
+*`Code`*
+
+```{python}
+tw_arc.drop('expanded_urls', axis=1, inplace=True )
+```
+
+*`Define`*
 Change variable types to appropriate
 
 
@@ -534,7 +545,6 @@ tw_arc.tweet_id = tw_arc.tweet_id.astype(str)
 tw_arc.timestamp = pd.to_datetime(tw_arc.timestamp)    
 tw_arc.source = tw_arc.source.astype(str)
 tw_arc.text = tw_arc.text.astype(str)
-tw_arc.expanded_urls = tw_arc.expanded_urls.astype(str)
 tw_arc.name = tw_arc.name.astype(str)
 tw_arc.classifier = tw_arc.classifier.astype('category')
 tw_arc.retweet_count = tw_arc.retweet_count.astype('int64')
@@ -557,10 +567,6 @@ type(tw_arc.source[0])
 
 ```{python}
 type(tw_arc.text[0])
-```
-
-```{python}
-type(tw_arc.expanded_urls[0])
 ```
 
 ```{python}
@@ -597,5 +603,9 @@ type(prediction.p3[0])
 tw_arc.to_csv('twitter_archive_master.csv')
 prediction.to_csv('twitter_archive_prediction.csv')
 ```
+```{python}
+
+```
+
 
 
