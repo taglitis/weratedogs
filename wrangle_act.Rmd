@@ -192,6 +192,14 @@ prediction.img_num.value_counts()
 prediction.describe()
 ```
 
+```{python}
+tweets_api.info()
+```
+
+```{python}
+tweets_api.describe()
+```
+
 **Quality**
 
 *`tw_arc`* table
