@@ -130,6 +130,91 @@ tweets[0]
 tweets_api.head()
 ```
 
+## Data assessment
+
+```{python}
+tw_arc
+```
+
+```{python}
+tw_arc.info()
+```
+
+```{python}
+tw_arc.describe()
+```
+
+```{python}
+tw_arc.rating_numerator.value_counts().head(25) 
+```
+
+```{python}
+tw_arc.in_reply_to_status_id.value_counts().head()
+```
+
+```{python}
+tw_arc.source.value_counts()
+```
+
+```{python}
+tw_arc.doggo.value_counts()
+```
+
+```{python}
+tw_arc.floofer.value_counts()                       
+```
+
+```{python}
+tw_arc.pupper.value_counts()
+```
+
+```{python}
+tw_arc.puppo.value_counts()
+```
+
+```{python}
+tw_arc.name.value_counts().head()
+```
+
+```{python}
+prediction.head()
+```
+
+```{python}
+prediction.info()
+```
+
+```{python}
+prediction.img_num.value_counts()
+```
+
+```{python}
+prediction.describe()
+```
+
+**Quality**
+
+*`tw_arc`* table
+* column source in tw_arc is too long to split source by 4 categories
+* in_reply_to_status_id, in_reply_to_user_id, retweeted_status_id, retweeted_status_user_id, retweeted_status_timestamp variables have a lot of missing data and, moreover, we do not need them for the analysis
+* rating_denominator is 10 in 2333 cases out 2356 cases
+* rating_numerator in most cases is in between 0 and 15, the rest consider as outliers
+* variable name has 745 None values and 55 "a" values 
+
+*`prediction`* table
+* variable img_num is not disribed  
+
+**Tidiness**
+
+*`tw_arc`* table
+* Variables doggo, floofer, pupper and puppo in one column
+* tables wt_arc and tweets_api form one observational unit 
+
+*`prediction`* table
+
+* jpg_url variable should be in tw_arc table to satisfy tidiness definition 
+
+
 ```{python}
 
 ```
