@@ -17,5 +17,119 @@ jupyter:
 ```
 
 ```{python}
+import pandas as pd
+import numpy as np
+import requests
+import matplotlib.image as mpimg
+import csv
+import io
+import matplotlib.pyplot as plt
+from pprint import pprint  
+```
+
+# Project: Gathering and analyze data of  WeRateDogs dataset
+
+```{python}
+img=mpimg.imread('dog.jpg')
+imgplot = plt.imshow(img)
+```
+
+## Gathering information
+**Read the provided file twitter-archive-enhanced-2.csv from the local folder**
+
+```{python}
+tw_arc = pd.read_csv('twitter-archive-enhanced-2.csv')
+```
+
+**Download file using the provided link** 
+
+```{python}
+r = requests.get('https://d17h27t6h515a5.cloudfront.net/topher/2017/August/599fd2ad_image-predictions/image-predictions.tsv').content
+prediction = pd.read_csv(io.StringIO(r.decode('utf-8')), sep = '\t')
+prediction.to_csv('prediction.tsv')
+print('prediction shape', prediction.shape)
+prediction.head()
+```
+
+**Access tweets via API with tweet_id**
+
+```{python}
+import tweepy
+import tweepy
+from tweepy import OAuthHandler
+import json
+from timeit import default_timer as timer
+import os
+
+if os.path.isfile('tweet_json.txt'):
+    print("The dataset has been downloaded already and written into the tweet_json.txt file. The data will be extracted from this file below")
+else:
+# Query Twitter API for each tweet in the Twitter archive and save JSON in a text file
+# These are hidden to comply with Twitter's API terms and conditions
+
+    consumer_key = 'hzkXG5HqgXN6UcAAaDE4ykLdm'  #'YOUR CONSUMER KEY'
+    consumer_secret = 'YLq3cp6W3rrshh8wPwCX7sLswKgiw5RkFyxj0JDzInODhp2MAR'  # 'YOUR CONSUMER SECRET'
+    access_token = '60896767-HDMh9m1vUbCexrXiWnqtijslouuisAAUEDcWn6Wu8' #'YOUR ACCESS TOKEN'
+    access_secret = 'oo5wfzXEyzSKa8Y763CTBvpK2JkI5TVDQv5jL040dc1Oz'  #'YOUR ACCESS SECRET'
+
+    auth = OAuthHandler(consumer_key, consumer_secret)
+    auth.set_access_token(access_token, access_secret)
+
+    api = tweepy.API(auth, wait_on_rate_limit=True)
+
+# NOTE TO STUDENT WITH MOBILE VERIFICATION ISSUES:
+# df_1 is a DataFrame with the twitter_archive_enhanced.csv file. You may have to
+# change line 17 to match the name of your DataFrame with twitter_archive_enhanced.csv
+# NOTE TO REVIEWER: this student had mobile verification issues so the following
+# Twitter API code was sent to this student from a Udacity instructor
+# Tweet IDs for which to gather additional data via Twitter's API
+    tweet_ids = tw_arc.tweet_id.values
+    len(tweet_ids)
+
+# Query Twitter's API for JSON data for each tweet ID in the Twitter archive
+    count = 0
+    fails_dict = {}
+    start = timer()
+# Save each tweet's returned JSON as a new line in a .txt file
+    with open('tweet_json.txt', 'w') as outfile:
+    # This loop will likely take 20-30 minutes to run because of Twitter's rate limit
+        for tweet_id in tweet_ids:
+            count += 1
+            print(str(count) + ": " + str(tweet_id))
+            try:
+                tweet = api.get_status(tweet_id, tweet_mode='extended')
+                print("Success")
+                json.dump(tweet._json, outfile)
+                outfile.write('\n')
+            except tweepy.TweepError as e:
+                print("Fail")
+                fails_dict[tweet_id] = e
+                pass
+    end = timer()
+    print(end - start)
+    print(fails_dict)
+```
+
+```{python}
+tweets = []
+for line in open('tweet_json.txt', 'r'):
+    tweets.append(json.loads(line))
+
+list_twits = []
+for json_data in tweets:
+    list_twits.append({'id' : json_data['id'],
+                       'retweet_count': int(json_data['retweet_count']),
+                       'favorite_count' : int(json_data['favorite_count'])})
+   
+tweets_api = pd.DataFrame(list_twits, columns = ['id', 'retweet_count' , 'favorite_count']) 
+#print out one json object for further reference 
+tweets[0] 
+```
+
+```{python}
+tweets_api.head()
+```
+
+```{python}
 
 ```
