@@ -591,6 +591,11 @@ type(prediction.p2[0])
 type(prediction.p3[0])
 ```
 
-```{python}
+## Store files to csv 
 
+```{python}
+tw_arc.to_csv('twitter_archive_master.csv')
+prediction.to_csv('twitter_archive_prediction.csv')
 ```
+
+
