@@ -177,6 +177,10 @@ tw_arc.name.value_counts().head()
 ```
 
 ```{python}
+tw_arc.sample(10)
+```
+
+```{python}
 prediction.head()
 ```
 
@@ -203,14 +207,18 @@ tweets_api.describe()
 **Quality**
 
 *`tw_arc`* table
-* column source in tw_arc is too long to split source by 4 categories
+* column source in tw_arc is too long for such source information
 * in_reply_to_status_id, in_reply_to_user_id, retweeted_status_id, retweeted_status_user_id, retweeted_status_timestamp variables have a lot of missing data and, moreover, we do not need them for the analysis
-* rating_denominator is 10 in 2333 cases out 2356 cases
+* rating_denominator is 10 in 2333 cases out 2356 cases, consider rating_denominator to be 10
 * rating_numerator in most cases is in between 0 and 15, the rest consider as outliers
 * variable name has 745 None values and 55 "a" values 
+* in timestamp +0000 is redundent information 
+* name variable has some entries starting with low case letters(example: An).  
 
 *`prediction`* table
-* variable img_num is not disribed  
+* variable img_num is not needed  
+
+* where it is needed change variable types to the appropriate 
 
 **Tidiness**
 
@@ -222,6 +230,366 @@ tweets_api.describe()
 
 * jpg_url variable should be in tw_arc table to satisfy tidiness definition 
 
+* tw_arc and prediction tables form two different obseravation units and will be kept seperatly 
+
+
+
+## Cleaning data
+
+```{python}
+#first make copies of datasets: 
+
+tw_arc_original = tw_arc.copy()
+prediction_original = prediction.copy()
+tweets_api_original = tweets_api.copy()
+```
+
+**Quality**
+
+
+*`Define`*
+
+URLs in source columns of tw_arc table shows source. Change provided URLs to the corresponding 4 categories  
+
+
+*`Code`*
+
+```{python}
+#We want to change this list: 
+source_list = ['<a href="http://twitter.com/download/iphone" rel="nofollow">Twitter for iPhone</a>',
+              '<a href="http://vine.co" rel="nofollow">Vine - Make a Scene</a>',
+              '<a href="http://twitter.com" rel="nofollow">Twitter Web Client</a>',
+              '<a href="https://about.twitter.com/products/tweetdeck" rel="nofollow">TweetDeck</a>']
+#with this list:
+new_source_list = ['Twitter for iPhone', 'Vine', 'Twitter Web Client', 'TweetDeck']
+```
+
+```{python}
+[tw_arc.source.replace(source_list, new_source_list, inplace=True) for current_source, new_source in zip(source_list, new_source_list)]
+```
+
+*`Code`*
+
+```{python}
+tw_arc.source.sample(10)
+```
+
+*`Define`*
+
+drop these variables: in_reply_to_status_id, in_reply_to_user_id, retweeted_status_id, retweeted_status_user_id, retweeted_status_timestamp  in tw_acr
+
+```{python}
+tw_arc.drop(['in_reply_to_status_id', 'in_reply_to_user_id', 'retweeted_status_id', 'retweeted_status_user_id', 'retweeted_status_timestamp'], axis = 1, inplace=True )
+
+```
+
+```{python}
+tw_arc.head()
+```
+
+*`Define`*
+
+Let rating_denominator be 10 for all entries. Hence, because all the entries have only one value 10, then drop this varible   
+
+
+*`Code`*
+
+```{python}
+tw_arc.drop('rating_denominator', axis=1, inplace=True)
+```
+
+*`Test`*
+
+```{python}
+tw_arc.head(1)
+```
+
+*`Define`*
+
+If rating_numerator is higer than 15 let it be 15 
+
+
+*`Code`*
+
+```{python}
+tw_arc.loc[tw_arc['rating_numerator']>15, 'rating_numerator'] = 15
+```
+
+*`Test`*
+
+```{python}
+tw_arc.describe()
+```
+
+*`Define`*
+in tw_arc name 'a' and None change to NaN
+
+
+*`Code`*
+
+```{python}
+tw_arc.name.replace(['None', 'a'], np.nan, inplace=True)
+```
+
+*`Test`*
+
+```{python}
+tw_arc.name.value_counts().head()
+```
+
+*`Define`*
+
+Remove +0000 from timestamp 
+
+
+*`Code`*
+
+```{python}
+tw_arc.timestamp = tw_arc.timestamp.str[:-5].str.strip()
+```
+
+*`Test`*
+
+```{python}
+tw_arc.timestamp.head()
+```
+
+*`Define`*
+
+Convert lowcase names in variable name to Title
+
+
+*`Code`*
+
+```{python}
+tw_arc.name =tw_arc.name.str.title()
+```
+
+```{python}
+tw_arc.name
+```
+
+*`Define`*
+
+Drop img_num from prediction table 
+
+
+*`Code`*
+
+```{python}
+prediction.drop('img_num', axis = 1, inplace = True)
+
+```
+
+*`Test`*
+
+```{python}
+prediction.head(1)
+```
+
+*`Define`*
+
+Variables doggo, floofer, pupper and puppo move to one variable called classifier
+
+
+*`Code`*
+
+```{python}
+tw_arc_temp=tw_arc[~((tw_arc['doggo'] != 'doggo') & (tw_arc['floofer'] != 'floofer') & (tw_arc['pupper'] != 'pupper') & (tw_arc['puppo'] != 'puppo'))].replace('None', np.nan)
+#'doggo', 'floofer', 'pupper', 'puppo'
+
+
+```
+
+```{python}
+tw_arc_temp = pd.melt(tw_arc_temp, id_vars = ['tweet_id', 'timestamp', 'source', 'text', 'expanded_urls', 'rating_numerator', 'name'],
+                      var_name = 'var_name', value_name = 'classifier')
+```
+
+```{python}
+tw_arc_temp.sample(5)
+```
+
+```{python}
+tw_arc_temp.dropna(subset=['classifier'], inplace = True)
+```
+
+```{python}
+tw_arc_temp.sample(5)
+```
+
+```{python}
+#Before we merge it with tw_arc get rid of redundent variables in both tables 
+tw_arc_temp.drop(['timestamp', 'source', 'text', 'expanded_urls', 'rating_numerator', 'name', 'var_name'], axis = 1, inplace=True)
+```
+
+```{python}
+tw_arc_temp.sample(5)
+```
+
+```{python}
+tw_arc.drop(['doggo', 'floofer', 'pupper', 'puppo'], axis = 1 , inplace = True)
+```
+
+```{python}
+tw_arc.sample()
+```
+
+```{python}
+tw_arc = tw_arc.merge(tw_arc_temp, on='tweet_id', how='left')
+
+```
+
+```{python}
+tw_arc.classifier.fillna('not classified', inplace=True)
+tw_arc.sample(5)
+```
+
+*`Test`*
+
+```{python}
+tw_arc.info()
+```
+
+```{python}
+tw_arc.classifier.sample(10)
+```
+
+*`Define`*
+Merge tw_arc and tweets_api tables together
+
+```{python}
+tw_arc.head(1)
+```
+
+```{python}
+tweets_api.head(1)
+```
+
+```{python}
+tw_arc = tw_arc.merge(tweets_api, how='left', left_on='tweet_id', right_on='id')
+```
+
+```{python}
+tw_arc.head(1)
+```
+
+```{python}
+#Remove redundent variable id
+tw_arc.drop('id', axis=1, inplace = True)
+```
+
+```{python}
+tw_arc.head(1)
+```
+
+*`Define`*
+
+Move jpg_url from prediction to tw_arc and drop jpg_url
+
+
+*`Code`*
+
+```{python}
+prediction.head()
+```
+
+```{python}
+tw_arc = tw_arc.merge(prediction, on='tweet_id', how="left")
+```
+
+```{python}
+tw_arc.drop(["p1", 'p1_conf','p1_dog', 'p2', 'p2_conf', 'p2_dog', 'p3', 'p3_conf', 'p3_dog'], axis = 1, inplace = True)
+prediction.drop('jpg_url', axis = 1, inplace = True)
+```
+
+*`Test`*
+
+```{python}
+tw_arc.head(1)
+```
+
+```{python}
+prediction.head(1)
+```
+
+*`Define`*
+Change variable types to appropriate
+
+
+*`Code`*
+
+```{python}
+tw_arc.info()
+```
+
+**We can see that retweet_count and favorite_count have  14 missing values. Let's remove rows with missing values.**
+
+```{python}
+tw_arc.dropna(subset = ['retweet_count', 'favorite_count'], inplace=True )
+```
+
+```{python}
+tw_arc.tweet_id = tw_arc.tweet_id.astype(str)
+tw_arc.timestamp = pd.to_datetime(tw_arc.timestamp)    
+tw_arc.source = tw_arc.source.astype(str)
+tw_arc.text = tw_arc.text.astype(str)
+tw_arc.expanded_urls = tw_arc.expanded_urls.astype(str)
+tw_arc.name = tw_arc.name.astype(str)
+tw_arc.classifier = tw_arc.classifier.astype('category')
+tw_arc.retweet_count = tw_arc.retweet_count.astype('int64')
+tw_arc.favorite_count = tw_arc.favorite_count.astype('int64')
+tw_arc.jpg_url = tw_arc.jpg_url.astype(str)
+```
+
+```{python}
+tw_arc.info()
+```
+
+```{python}
+#where info gives object check a cell:
+type(tw_arc.tweet_id[0])
+```
+
+```{python}
+type(tw_arc.source[0])
+```
+
+```{python}
+type(tw_arc.text[0])
+```
+
+```{python}
+type(tw_arc.expanded_urls[0])
+```
+
+```{python}
+type(tw_arc.text[0])
+```
+
+```{python}
+type(tw_arc.jpg_url[0])
+```
+
+```{python}
+tw_arc.head()
+```
+
+```{python}
+prediction.info()
+```
+
+```{python}
+type(prediction.p1[0])
+```
+
+```{python}
+type(prediction.p2[0])
+```
+
+```{python}
+type(prediction.p3[0])
+```
 
 ```{python}
 
