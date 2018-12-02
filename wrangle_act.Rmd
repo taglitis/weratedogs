@@ -24,7 +24,8 @@ import matplotlib.image as mpimg
 import csv
 import io
 import matplotlib.pyplot as plt
-from pprint import pprint  
+from pprint import pprint
+# %matplotlib inline
 ```
 
 # Project: Gathering and analyze data of  WeRateDogs dataset
@@ -114,20 +115,22 @@ else:
 tweets = []
 for line in open('tweet_json.txt', 'r'):
     tweets.append(json.loads(line))
+#print out one json object for further reference 
+tweets[0]     
+```
 
+```{python}
+#creat a list of data from tweet_json.txt
 list_twits = []
 for json_data in tweets:
     list_twits.append({'id' : json_data['id'],
                        'retweet_count': int(json_data['retweet_count']),
                        'favorite_count' : int(json_data['favorite_count'])})
    
+#creat a Dataframe
 tweets_api = pd.DataFrame(list_twits, columns = ['id', 'retweet_count' , 'favorite_count']) 
-#print out one json object for further reference 
-tweets[0] 
-```
-
-```{python}
-tweets_api.head()
+#Check out the obatined DataFrame
+tweets_api.head() 
 ```
 
 ## Data assessment
@@ -204,6 +207,37 @@ tweets_api.info()
 tweets_api.describe()
 ```
 
+**Note:** For me it looks like some information is missing. This variable should confirm if this is a true picture of a dog breed or not.  
+
+```{python}
+prediction.query('tweet_id == "674063288070742018"').jpg_url
+```
+
+```{python}
+prediction.query('tweet_id == "674063288070742018"')
+```
+
+```{python}
+img=mpimg.imread('straus.jpg')
+imgplot = plt.imshow(img)
+```
+
+```{python}
+prediction.query('tweet_id == "670822709593571328"').jpg_url
+```
+
+```{python}
+prediction.query('tweet_id == "670822709593571328"')
+```
+
+```{python}
+img=mpimg.imread('small_doggy.jpg')
+imgplot = plt.imshow(img)
+```
+
+As we can see, one tweet has a straus on a picture and it was correctly classified as "not dog breed" while another picture has dog on it. We can see that p1_dog and p3_dog misclassified, i.e. it is not a dog breed, while p2_dog correctly classified this picture. However, we cannot confirm this information unless we open each picture, which is not possible due to a big voleume of data.   
+
+
 **Quality**
 
 *`tw_arc`* table
@@ -213,13 +247,15 @@ tweets_api.describe()
 * rating_numerator in most cases is in between 0 and 15, the rest consider as outliers
 * variable name has 745 None values and 55 "a" values 
 * in timestamp +0000 is redundent information 
-* name variable has some entries starting with low case letters(example: An).
-* expanded_urls contains link which are not validm possible because they are expired
+* name variable has some entries starting with low case letters(example: An). Is An a dog name? It occurs 7 time in the dataset, though.
+* expanded_urls contains link which are not valid, possible because they are expired
+* remove rows in retweet_count and favorite_count with missing values
 
 *`prediction`* table
 * variable img_num is not needed  
 
-* where it is needed change variable types to the appropriate 
+* change variable types to the appropriate, where it is needed 
+* prediction table is missing one importent varaible which would show if the picture truly contains breed of dog or not like it is shown above. one picture has straus on it and algotithm classified it as it is not a breed of dog, but another picture has a dog on it; however, it was misclassified as not breed of dog
 
 **Tidiness**
 
@@ -248,12 +284,12 @@ tweets_api_original = tweets_api.copy()
 **Quality**
 
 
-*`Define`*
+**`Define`**
 
 URLs in source columns of tw_arc table shows source. Change provided URLs to the corresponding 4 categories  
 
 
-*`Code`*
+**`Code`**
 
 ```{python}
 #We want to change this list: 
@@ -261,21 +297,21 @@ source_list = ['<a href="http://twitter.com/download/iphone" rel="nofollow">Twit
               '<a href="http://vine.co" rel="nofollow">Vine - Make a Scene</a>',
               '<a href="http://twitter.com" rel="nofollow">Twitter Web Client</a>',
               '<a href="https://about.twitter.com/products/tweetdeck" rel="nofollow">TweetDeck</a>']
-#with this list:
+#to this list:
 new_source_list = ['Twitter for iPhone', 'Vine', 'Twitter Web Client', 'TweetDeck']
 ```
 
 ```{python}
-[tw_arc.source.replace(source_list, new_source_list, inplace=True) for current_source, new_source in zip(source_list, new_source_list)]
+[tw_arc.source.replace(source_list, new_source_list, inplace=True) for current_source, new_source in zip(source_list, new_source_list)];
 ```
 
-*`Code`*
+**`Test`**
 
 ```{python}
 tw_arc.source.sample(10)
 ```
 
-*`Define`*
+**`Define`**
 
 drop these variables: in_reply_to_status_id, in_reply_to_user_id, retweeted_status_id, retweeted_status_user_id, retweeted_status_timestamp  in tw_acr
 
@@ -284,120 +320,125 @@ tw_arc.drop(['in_reply_to_status_id', 'in_reply_to_user_id', 'retweeted_status_i
 
 ```
 
+**`Test`**
+
 ```{python}
 tw_arc.head()
 ```
 
-*`Define`*
+**`Define`**
 
-Let rating_denominator be 10 for all entries. Hence, because all the entries have only one value 10, then drop this varible   
+Let rating_denominator to be 10 for all entries. Hence, because all the entries have only one value 10, then drop this varible. You don't want to have the entire column with all zeros.    
 
 
-*`Code`*
+**`Code`**
 
 ```{python}
 tw_arc.drop('rating_denominator', axis=1, inplace=True)
 ```
 
-*`Test`*
+**`Test`**
 
 ```{python}
 tw_arc.head(1)
 ```
 
-*`Define`*
+**`Define`**
 
-If rating_numerator is higer than 15 let it be 15 
+If rating_numerator is higer than 15 let it be 15. Assume that 15 is the maximum possible value. Everything higher are outliers. 
 
 
-*`Code`*
+**`Code`**
 
 ```{python}
 tw_arc.loc[tw_arc['rating_numerator']>15, 'rating_numerator'] = 15
 ```
 
-*`Test`*
+**`Test`**
 
 ```{python}
 tw_arc.describe()
 ```
 
-*`Define`*
+**`Define`**
+
 in tw_arc name 'a' and None change to NaN
 
 
-*`Code`*
+**`Code`**
 
 ```{python}
 tw_arc.name.replace(['None', 'a'], np.nan, inplace=True)
 ```
 
-*`Test`*
+**`Test`**
 
 ```{python}
 tw_arc.name.value_counts().head()
 ```
 
-*`Define`*
+**`Define`**
 
 Remove +0000 from timestamp 
 
 
-*`Code`*
+**`Code`**
 
 ```{python}
 tw_arc.timestamp = tw_arc.timestamp.str[:-5].str.strip()
 ```
 
-*`Test`*
+**`Test`**
 
 ```{python}
 tw_arc.timestamp.head()
 ```
 
-*`Define`*
+**`Define`**
 
 Convert lowcase names in variable name to Title
 
 
-*`Code`*
+**`Code`**
 
 ```{python}
 tw_arc.name =tw_arc.name.str.title()
 ```
 
+**`Test`**
+
 ```{python}
-tw_arc.name
+tw_arc.name.sample(5)
 ```
 
-*`Define`*
+**`Define`**
 
 Drop img_num from prediction table 
 
 
-*`Code`*
+**`Code`**
 
 ```{python}
 prediction.drop('img_num', axis = 1, inplace = True)
 
 ```
 
-*`Test`*
+**`Test`**
 
 ```{python}
 prediction.head(1)
 ```
 
-*`Define`*
+**`Define`**
 
 Variables doggo, floofer, pupper and puppo move to one variable called classifier
 
 
-*`Code`*
+**`Code`**
 
 ```{python}
 tw_arc_temp=tw_arc[~((tw_arc['doggo'] != 'doggo') & (tw_arc['floofer'] != 'floofer') & (tw_arc['pupper'] != 'pupper') & (tw_arc['puppo'] != 'puppo'))].replace('None', np.nan)
-#'doggo', 'floofer', 'pupper', 'puppo'
+
 
 
 ```
@@ -433,7 +474,7 @@ tw_arc.drop(['doggo', 'floofer', 'pupper', 'puppo'], axis = 1 , inplace = True)
 ```
 
 ```{python}
-tw_arc.sample()
+tw_arc.sample(5)
 ```
 
 ```{python}
@@ -443,10 +484,13 @@ tw_arc = tw_arc.merge(tw_arc_temp, on='tweet_id', how='left')
 
 ```{python}
 tw_arc.classifier.fillna('not classified', inplace=True)
-tw_arc.sample(5)
 ```
 
-*`Test`*
+**`Test`**
+
+```{python}
+tw_arc.sample(5)
+```
 
 ```{python}
 tw_arc.info()
@@ -456,8 +500,12 @@ tw_arc.info()
 tw_arc.classifier.sample(10)
 ```
 
-*`Define`*
+**`Define`**
+
 Merge tw_arc and tweets_api tables together
+
+
+**`Code`**
 
 ```{python}
 tw_arc.head(1)
@@ -480,16 +528,18 @@ tw_arc.head(1)
 tw_arc.drop('id', axis=1, inplace = True)
 ```
 
+**`Test`**
+
 ```{python}
 tw_arc.head(1)
 ```
 
-*`Define`*
+**`Define`**
 
 Move jpg_url from prediction to tw_arc and drop jpg_url
 
 
-*`Code`*
+**`Code`**
 
 ```{python}
 prediction.head()
@@ -504,7 +554,7 @@ tw_arc.drop(["p1", 'p1_conf','p1_dog', 'p2', 'p2_conf', 'p2_dog', 'p3', 'p3_conf
 prediction.drop('jpg_url', axis = 1, inplace = True)
 ```
 
-*`Test`*
+**`Test`**
 
 ```{python}
 tw_arc.head(1)
@@ -514,21 +564,28 @@ tw_arc.head(1)
 prediction.head(1)
 ```
 
-*`Define`*
+**`Define`**
 
 Drop expanded_urls 
 
-*`Code`*
+**`Code`**
 
 ```{python}
-tw_arc.drop('expanded_urls', axis=1, inplace=True )
+tw_arc.drop('expanded_urls', axis=1, inplace=True)
 ```
 
-*`Define`*
+**`Test`**
+
+```{python}
+tw_arc.head(1)
+```
+
+**`Define`**
+
 Change variable types to appropriate
 
 
-*`Code`*
+**`Code`**
 
 ```{python}
 tw_arc.info()
@@ -551,6 +608,8 @@ tw_arc.retweet_count = tw_arc.retweet_count.astype('int64')
 tw_arc.favorite_count = tw_arc.favorite_count.astype('int64')
 tw_arc.jpg_url = tw_arc.jpg_url.astype(str)
 ```
+
+**``Test``**
 
 ```{python}
 tw_arc.info()
@@ -581,21 +640,8 @@ type(tw_arc.jpg_url[0])
 tw_arc.head()
 ```
 
-```{python}
-prediction.info()
-```
+**Because preidction table does not have a variable which shows if it is truly a breed of dog or not as it was shown above we cannot extract information how effective this algorithm. Because of this we won't keep this table** 
 
-```{python}
-type(prediction.p1[0])
-```
-
-```{python}
-type(prediction.p2[0])
-```
-
-```{python}
-type(prediction.p3[0])
-```
 
 ## Store files to csv 
 
@@ -603,9 +649,187 @@ type(prediction.p3[0])
 tw_arc.to_csv('twitter_archive_master.csv')
 prediction.to_csv('twitter_archive_prediction.csv')
 ```
-```{python}
+## Analyzing and Visualizing Data
 
+```{python}
+tw_arc.head()
 ```
 
 
 
+
+```{python}
+tw_arc.describe()
+```
+
+```{python}
+fig, ax = plt.subplots()
+plt.hist(tw_arc.rating_numerator);
+plt.title('Rating numerator histogram');
+ax.set_ylabel('count');
+ax.set_xlabel('rating value');
+```
+
+*Let's define a confidence interval for the mean of the rating_numerator using a bootstrapping method*
+
+```{python}
+sample = tw_arc.rating_numerator.sample(300)
+```
+
+```{python}
+sample_means = np.random.choice(sample, size=(10000, 200)).mean(axis=1)
+sample_means
+```
+
+```{python}
+left, right = np.percentile(sample_means, 2.5), np.percentile(sample_means, 97.5), 
+plt.hist(sample_means);
+plt.axvline(left, color='r');
+plt.axvline(right, color='r');
+```
+
+```{python}
+print("We can expect the mean of our population to be in between {} and {}".format(left, right))
+```
+
+Plot histogram for retweet_count
+
+```{python}
+plt.hist(tw_arc.retweet_count);
+```
+
+We can say that this histogram is skewed left and has outliers. Plot boxplot to define outliers:
+
+```{python}
+plt.boxplot(tw_arc.retweet_count);
+```
+
+We can see that outliers are above 5000. Plot hist for values less then 5000: 
+
+```{python}
+box_rc = tw_arc[tw_arc.retweet_count < 5000]
+fig, ax = plt.subplots()
+plt.hist(box_rc.retweet_count);
+plt.title('Retweet count histogram');
+ax.set_ylabel('count');
+ax.set_xlabel('Number of retweets');
+```
+
+Calculate mean and standard deviation:
+
+```{python}
+print('mean: {}, standard deviation: {}'.format(np.mean(tw_arc.retweet_count), np.std(tw_arc.retweet_count)))
+```
+
+Plot hist for favorite_count
+
+```{python}
+plt.hist(tw_arc.favorite_count);
+```
+
+Outliers are presented here 
+
+```{python}
+plt.boxplot(tw_arc.favorite_count);
+```
+
+Assume that outliers are everything above 25000
+
+```{python}
+box_fc = tw_arc[tw_arc.favorite_count < 25000]
+```
+
+```{python}
+plt.hist(box_fc.favorite_count);
+```
+
+Calculate mean and standard deviation:
+
+```{python}
+print('mean: {}, standard deviation: {}'.format(np.mean(tw_arc.favorite_count), np.std(tw_arc.favorite_count)))
+```
+
+Investigate correlations between parameters
+
+1. between retweet_count and favorite_count
+
+```{python}
+import seaborn as sns #https://stackoverflow.com/questions/37234163/how-to-add-a-line-of-best-fit-to-scatter-plot
+mask = ((tw_arc['retweet_count']<5000) & (tw_arc['favorite_count']<25000))
+sns.regplot(tw_arc[mask].retweet_count, tw_arc[mask].favorite_count)
+plt.title('Correlation between favorite count and retweet count');
+```
+
+favorite_counte = 0 we can consider as outliers 
+
+```{python}
+mask = (tw_arc['favorite_count']!=0) & (tw_arc['retweet_count']<5000) & (tw_arc['favorite_count']<25000)
+```
+
+```{python}
+sns.regplot(tw_arc[mask].retweet_count, tw_arc[mask].favorite_count);
+plt.title('Correlation between favorite count and retweet count');
+```
+
+```{python}
+#calculate correlation coeffcients: 
+np.corrcoef(tw_arc[mask].retweet_count, tw_arc[mask].favorite_count)[0,1]
+```
+
+Hence, we have a very strong, positive correlation 
+
+2. Correlation between retweet_count and rating_numerator
+
+```{python}
+sns.regplot(tw_arc[mask].retweet_count, tw_arc[mask].rating_numerator);
+plt.title('Correlation between rating numerator and retweet count');
+```
+
+```{python}
+#calculate correlation coeffcients: 
+np.corrcoef(tw_arc[mask].retweet_count, tw_arc[mask].rating_numerator)[0,1]
+```
+
+Hence, these parameters have weak, positive correlation 
+
+```{python}
+sns.regplot(tw_arc[mask].favorite_count, tw_arc[mask].rating_numerator);
+plt.title('Correlation between rating numerator and favorite count');
+```
+
+```{python}
+np.corrcoef(tw_arc[mask].favorite_count, tw_arc[mask].rating_numerator)[0,1]
+```
+
+Hence, these parameters have weak, positive correlation 
+
+Let's plot bar charts for Source and Classifier variables 
+
+```{python}
+counts = [tw_arc.query('source == "Twitter for iPhone"').count()[0], tw_arc.query('source == "Vine"').count()[0],
+          tw_arc.query('source == "Twitter Web Client"').count()[0], tw_arc.query('source == "TweetDeck"').count()[0]]
+ind = np.arange(1, 5)
+fig, ax = plt.subplots();
+plt.bar(ind, counts);
+ax.set_xticks(ind);
+ax.set_xticklabels(new_source_list);
+ax.set_ylabel('Counts');
+ax.set_title('Source');
+```
+
+```{python}
+doggo_list= ['not classified','doggo', 'floofer', 'pupper', 'puppo']
+counts = [tw_arc.query('classifier == "not classified"').count()[0], tw_arc.query('classifier == "doggo"').count()[0], tw_arc.query('classifier == "floofer"').count()[0],
+          tw_arc.query('classifier == "floofer"').count()[0], tw_arc.query('classifier == "puppo"').count()[0]]
+ind = np.arange(1, 6)
+fig, ax = plt.subplots();
+plt.bar(ind, counts);
+ax.set_xticks(ind);
+ax.set_xticklabels(doggo_list);
+ax.set_ylabel('Counts');
+ax.set_title('Dog classification');
+```
+
+```{python}
+
+```
