@@ -50,6 +50,7 @@ prediction = pd.read_csv(io.StringIO(r.decode('utf-8')), sep = '\t')
 prediction.to_csv('prediction.tsv')
 print('prediction shape', prediction.shape)
 prediction.head()
+prediction.to_csv('image_predictions.tsv.tsv', sep='\t', index = False) # save DF to a file 
 ```
 
 **Access tweets via API with tweet_id**
@@ -267,7 +268,7 @@ As we can see, one tweet has a straus on a picture and it was correctly classifi
 
 * jpg_url variable should be in tw_arc table to satisfy tidiness definition 
 
-* tw_arc and prediction tables form two different obseravation units and will be kept seperatly 
+* tw_arc and prediction tables form two different obseravations units and will be kept seperately 
 
 
 
@@ -643,12 +644,6 @@ tw_arc.head()
 **Because preidction table does not have a variable which shows if it is truly a breed of dog or not as it was shown above we cannot extract information how effective this algorithm. Because of this we won't keep this table** 
 
 
-## Store files to csv 
-
-```{python}
-tw_arc.to_csv('twitter_archive_master.csv')
-prediction.to_csv('twitter_archive_prediction.csv')
-```
 ## Analyzing and Visualizing Data
 
 ```{python}
@@ -682,8 +677,12 @@ sample_means
 ```
 
 ```{python}
+fig, ax = plt.subplots()
 left, right = np.percentile(sample_means, 2.5), np.percentile(sample_means, 97.5), 
 plt.hist(sample_means);
+plt.title('Confidence interval of mean for rating numerator values')
+ax.set_xlabel('Mean of the rating numerator');
+ax.set_ylabel('Counts');
 plt.axvline(left, color='r');
 plt.axvline(right, color='r');
 ```
@@ -698,7 +697,7 @@ Plot histogram for retweet_count
 plt.hist(tw_arc.retweet_count);
 ```
 
-We can say that this histogram is skewed left and has outliers. Plot boxplot to define outliers:
+We can say that this histogram is skewed right and has outliers. Plot boxplot to define outliers:
 
 ```{python}
 plt.boxplot(tw_arc.retweet_count);
@@ -707,9 +706,9 @@ plt.boxplot(tw_arc.retweet_count);
 We can see that outliers are above 5000. Plot hist for values less then 5000: 
 
 ```{python}
-box_rc = tw_arc[tw_arc.retweet_count < 5000]
+tw_arc = tw_arc[tw_arc.retweet_count < 5000].reset_index(drop = True)
 fig, ax = plt.subplots()
-plt.hist(box_rc.retweet_count);
+plt.hist(tw_arc.retweet_count);
 plt.title('Retweet count histogram');
 ax.set_ylabel('count');
 ax.set_xlabel('Number of retweets');
@@ -730,17 +729,21 @@ plt.hist(tw_arc.favorite_count);
 Outliers are presented here 
 
 ```{python}
-plt.boxplot(tw_arc.favorite_count);
+plt.boxplot(tw_arc.favorite_count.reset_index(drop = True));
 ```
 
-Assume that outliers are everything above 25000
+We can see that outliers are everything above 15000
 
 ```{python}
-box_fc = tw_arc[tw_arc.favorite_count < 25000]
+tw_arc = tw_arc[tw_arc.favorite_count < 16000]
 ```
 
 ```{python}
-plt.hist(box_fc.favorite_count);
+fig, ax = plt.subplots()
+plt.hist(tw_arc.favorite_count);
+plt.title('Favorite counts histogram');
+ax.set_ylabel('Count');
+ax.set_xlabel('Number of favorite counts');
 ```
 
 Calculate mean and standard deviation:
@@ -755,25 +758,24 @@ Investigate correlations between parameters
 
 ```{python}
 import seaborn as sns #https://stackoverflow.com/questions/37234163/how-to-add-a-line-of-best-fit-to-scatter-plot
-mask = ((tw_arc['retweet_count']<5000) & (tw_arc['favorite_count']<25000))
-sns.regplot(tw_arc[mask].retweet_count, tw_arc[mask].favorite_count)
+sns.regplot(tw_arc.retweet_count, tw_arc.favorite_count);
 plt.title('Correlation between favorite count and retweet count');
 ```
 
 favorite_counte = 0 we can consider as outliers 
 
 ```{python}
-mask = (tw_arc['favorite_count']!=0) & (tw_arc['retweet_count']<5000) & (tw_arc['favorite_count']<25000)
+tw_arc = tw_arc[tw_arc['favorite_count']!=0] 
 ```
 
 ```{python}
-sns.regplot(tw_arc[mask].retweet_count, tw_arc[mask].favorite_count);
+sns.regplot(tw_arc.retweet_count, tw_arc.favorite_count);
 plt.title('Correlation between favorite count and retweet count');
 ```
 
 ```{python}
 #calculate correlation coeffcients: 
-np.corrcoef(tw_arc[mask].retweet_count, tw_arc[mask].favorite_count)[0,1]
+np.corrcoef(tw_arc.retweet_count, tw_arc.favorite_count)[0,1]
 ```
 
 Hence, we have a very strong, positive correlation 
@@ -781,24 +783,24 @@ Hence, we have a very strong, positive correlation
 2. Correlation between retweet_count and rating_numerator
 
 ```{python}
-sns.regplot(tw_arc[mask].retweet_count, tw_arc[mask].rating_numerator);
+sns.regplot(tw_arc.retweet_count, tw_arc.rating_numerator);
 plt.title('Correlation between rating numerator and retweet count');
 ```
 
 ```{python}
 #calculate correlation coeffcients: 
-np.corrcoef(tw_arc[mask].retweet_count, tw_arc[mask].rating_numerator)[0,1]
+np.corrcoef(tw_arc.retweet_count, tw_arc.rating_numerator)[0,1]
 ```
 
 Hence, these parameters have weak, positive correlation 
 
 ```{python}
-sns.regplot(tw_arc[mask].favorite_count, tw_arc[mask].rating_numerator);
+sns.regplot(tw_arc.favorite_count, tw_arc.rating_numerator);
 plt.title('Correlation between rating numerator and favorite count');
 ```
 
 ```{python}
-np.corrcoef(tw_arc[mask].favorite_count, tw_arc[mask].rating_numerator)[0,1]
+np.corrcoef(tw_arc.favorite_count, tw_arc.rating_numerator)[0,1]
 ```
 
 Hence, these parameters have weak, positive correlation 
@@ -830,6 +832,8 @@ ax.set_ylabel('Counts');
 ax.set_title('Dog classification');
 ```
 
-```{python}
+## Store files to csv 
 
+```{python}
+tw_arc.to_csv('twitter_archive_master.csv', sep=';', index = False, encoding='utf-8', columns = ['tweet_id', 'timestamp', 'source', 'text', 'rating_numerator','name','classifier','retweet_count','favorite_count', 'jpg_url'])
 ```
