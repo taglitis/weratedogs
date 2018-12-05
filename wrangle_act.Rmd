@@ -50,7 +50,7 @@ prediction = pd.read_csv(io.StringIO(r.decode('utf-8')), sep = '\t')
 prediction.to_csv('prediction.tsv')
 print('prediction shape', prediction.shape)
 prediction.head()
-prediction.to_csv('image_predictions.tsv.tsv', sep='\t', index = False) # save DF to a file 
+prediction.to_csv('image_predictions.tsv', sep='\t', index = False) # save DF to a file 
 ```
 
 **Access tweets via API with tweet_id**
@@ -69,10 +69,10 @@ else:
 # Query Twitter API for each tweet in the Twitter archive and save JSON in a text file
 # These are hidden to comply with Twitter's API terms and conditions
 
-    consumer_key = 'hzkXG5HqgXN6UcAAaDE4ykLdm'  #'YOUR CONSUMER KEY'
-    consumer_secret = 'YLq3cp6W3rrshh8wPwCX7sLswKgiw5RkFyxj0JDzInODhp2MAR'  # 'YOUR CONSUMER SECRET'
-    access_token = '60896767-HDMh9m1vUbCexrXiWnqtijslouuisAAUEDcWn6Wu8' #'YOUR ACCESS TOKEN'
-    access_secret = 'oo5wfzXEyzSKa8Y763CTBvpK2JkI5TVDQv5jL040dc1Oz'  #'YOUR ACCESS SECRET'
+    consumer_key =   #'YOUR CONSUMER KEY'
+    consumer_secret =   # 'YOUR CONSUMER SECRET'
+    access_token =  #'YOUR ACCESS TOKEN'
+    access_secret =   #'YOUR ACCESS SECRET'
 
     auth = OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_token, access_secret)
