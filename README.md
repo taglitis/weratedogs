@@ -21,7 +21,7 @@ Based on the obtained clean dataset **Data analysis** was conducted with visauli
 
 Fianlly, two reports were written for the internal and external usege. 
 
-**`Note:`** Git commit was used on Jupyter Notebook following [this article](https://towardsdatascience.com/version-control-with-jupyter-notebooks-f096f4d7035a) 
+**`Note:`** Git commit was used on Jupyter Notebook following [this article](https://towardsdatascience.com/version-control-with-jupyter-notebooks-f096f4d7035a). 
 
 
 
